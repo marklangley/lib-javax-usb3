@@ -138,6 +138,7 @@ public final class JNINativeLibraryLoader {
       /**
        * Copy the (binary) file from within the JAR to the temporary directory.
        */
+      FileSystems.newFileSystem(url.toURI(), Collections.emptyMap());
       Path source = Paths.get(url.toURI());
       Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.FINE, "Copy USB native library from {0} to {1}", new Object[]{source, destination});
       Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.INFO, "Loading native lib {0}", source);
