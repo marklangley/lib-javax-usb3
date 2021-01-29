@@ -19,9 +19,11 @@ package javax.usb3.utility;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -109,9 +111,16 @@ public final class JNINativeLibraryLoader {
   public static void load() {
     /**
      * If the library is already extracted then no work is required.
+     *
+     * .                                                                            n ²
      */
     Path destination = Paths.get(System.getProperty("java.io.tmpdir"), "javaxusb", getOSName(), getOSArch(), getLibraryFilename());
-    if (destination.toFile().exists() && destination.toFile().length() > 0) {
+    Path destinationDependency = Paths.get(System.getProperty("java.io.tmpdir"), "javaxusb", getOSName(), getOSArch(), "libusb-1.0.dll");
+    if (!getOSName().contains(OS_WINDOWS) && destination.toFile().exists() && destination.toFile().length() > 0) {
+      System.load(destination.toString());
+      return;
+    }else if(getOSName().contains(OS_WINDOWS) && destinationDependency.toFile().exists() && destinationDependency.toFile().length() > 0){
+      System.load(destinationDependency.toString());
       System.load(destination.toString());
       return;
     }
@@ -129,18 +138,31 @@ public final class JNINativeLibraryLoader {
       /**
        * Copy the (binary) file from within the JAR to the temporary directory.
        */
+      FileSystems.newFileSystem(url.toURI(), Collections.emptyMap());
       Path source = Paths.get(url.toURI());
       Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.FINE, "Copy USB native library from {0} to {1}", new Object[]{source, destination});
       Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.INFO, "Loading native lib {0}", source);
-      Files.copy(source, destination);
-      /**
-       * Mark the file to be deleted upon exit to leave no trace.
-       */
-//      destination.toFile().deleteOnExit();
-      /**
-       * Load the native library and done.
-       */
-      System.load(destination.toString());
+      if (!destination.toFile().exists()){
+        Files.copy(source, destination);
+      }
+
+      if(getOSName().contains(OS_WINDOWS)){
+        URL urlDependedWin32 = JNINativeLibraryLoader.class.getClassLoader().getResource("META-INF/nativelib/" + getOSName() + "/" + getOSArch() + "/" + "libusb-1.0.dll");
+        source = Paths.get(urlDependedWin32.toURI());
+        Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.FINE, "Copy USB native library from {0} to {1}", new Object[]{source, destination});
+        Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.INFO, "Loading native lib {0}", source);
+
+        if (!destinationDependency.toFile().exists()){
+          Files.copy(source, destinationDependency);
+        }
+
+      }
+      if(getOSName().contains(OS_WINDOWS) ){
+        System.load(destinationDependency.toString());
+        System.load(destination.toString());
+      }else{
+        System.load(destination.toString());
+      }
     } catch (URISyntaxException | IOException e) {
       Logger.getLogger(JNINativeLibraryLoader.class.getName()).log(Level.SEVERE, null, e);
     }
