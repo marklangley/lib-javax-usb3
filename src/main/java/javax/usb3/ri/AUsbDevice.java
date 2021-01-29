@@ -262,6 +262,21 @@ public abstract class AUsbDevice implements IUsbDevice {
     return this.handle;
   }
 
+
+  /**
+   * Obtain the underlying device handle.
+   *
+   * This provides back door access to LibUsb functionality. It's a hack
+   * to get access to low level functionality not exposed by javax-usb3.
+   * Use it sparingly,
+   *
+   * @return The USB device handle.
+   */
+  public DeviceHandle getDeviceHandle() {
+	return this.handle;
+  }
+
+
   /**
    * Closes the device. If device is not open then nothing is done.
    */
